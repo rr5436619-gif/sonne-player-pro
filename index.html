@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<meta name="description" content="Sonne Player — مشغّل قوائم IPTV بواجهة تلفاز، يعمل على الحاسوب والهاتف والتلفاز الذكي.">
+<title>Sonne Player</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+<style>
+:root{--bg:#0f1115;--panel:#171a21;--panel2:#1f232c;--line:#2a2f3a;--text:#eef0f4;--mute:#9aa3b2;--sun:#f5b335;--sun2:#e8892a;--red:#e2574c;--ok:#3fb67b}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",Arial,sans-serif}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+.app{display:grid;grid-template-columns:360px 1fr;grid-template-rows:auto 1fr;height:100vh}
+#ad{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:12px;min-height:40px;padding:6px 14px;background:linear-gradient(90deg,var(--sun2),var(--sun));color:#1b1300;font-weight:600;font-size:14px;text-decoration:none}
+#ad small{opacity:.7;font-weight:400}
+#ad.hide{display:none}
+aside{background:var(--panel);border-inline-start:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.brand{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 8px}
+.logo{font-size:24px;font-weight:800;letter-spacing:.3px}
+.logo b{color:var(--sun)}
+.badge{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--panel2);color:var(--mute);margin-inline-start:6px;vertical-align:middle}
+.badge.pro{background:var(--sun);color:#1b1300}
+.iconbtn{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--mute)}
+.iconbtn:hover,.iconbtn:focus{background:var(--panel2);color:var(--text);outline:none}
+.search{margin:6px 16px;padding:9px 12px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);width:calc(100% - 32px)}
+.tabs{display:flex;gap:6px;padding:8px 16px;overflow-x:auto;scrollbar-width:none}
+.tab{white-space:nowrap;padding:6px 12px;border-radius:99px;background:var(--panel2);color:var(--mute);font-size:13px}
+.tab.on{background:var(--red);color:#fff}
+#list{flex:1;overflow-y:auto;padding:4px 8px 8px}
+.ch{display:flex;align-items:center;gap:12px;width:100%;padding:8px 10px;border-radius:12px;text-align:start}
+.ch:hover,.ch:focus{background:var(--panel2);outline:none}
+.ch.on{background:#2a2216;box-shadow:inset 0 0 0 1px var(--sun)}
+.ch .num{width:24px;color:var(--mute);font-size:13px;text-align:center}
+.ch .lg{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;font-weight:700;font-size:14px;overflow:hidden;flex:none;background:#333}
+.ch .lg img{width:100%;height:100%;object-fit:contain;background:#fff}
+.ch .nm{flex:1;min-width:0}
+.ch .nm div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch .nm small{color:var(--mute);font-size:12px}
+.ch .fav{color:var(--sun);font-size:14px}
+.empty{padding:30px 18px;color:var(--mute);text-align:center;line-height:1.8}
+.foot{border-top:1px solid var(--line);padding:8px 14px;font-size:11px;color:var(--mute);display:flex;flex-wrap:wrap;gap:4px 12px}
+.foot a{color:var(--mute);cursor:pointer;text-decoration:underline}
+main{position:relative;background:#000;min-height:0;display:flex;flex-direction:column}
+video{flex:1;width:100%;min-height:0;background:#000}
+#home{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:radial-gradient(circle at 50% 40%,#1c2029,#0b0c10);text-align:center;padding:20px}
+#home h1{font-size:clamp(40px,7vw,80px);margin:0;font-weight:800}
+#home h1 b{color:var(--sun)}
+#home p{color:var(--mute);margin:0}
+.btn{padding:11px 22px;border-radius:12px;background:var(--sun);color:#1b1300;font-weight:700}
+.btn.ghost{background:var(--panel2);color:var(--text)}
+.btn:focus{outline:2px solid #fff;outline-offset:2px}
+.bar{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--panel);border-top:1px solid var(--line);min-height:52px}
+.bar .now{flex:1;min-width:0}
+.bar .now b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .now small{color:var(--mute);font-size:12px}
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#000c;border:1px solid var(--line);padding:10px 18px;border-radius:12px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
+#toast.show{opacity:1}
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:18px;padding:0;width:min(560px,94vw);max-height:88vh}
+dialog::backdrop{background:#000a}
+.dh{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+.dh h2{margin:0;font-size:18px}
+.db{padding:16px 20px;overflow-y:auto;max-height:70vh;line-height:1.7}
+.db label{display:block;margin:12px 0 4px;font-size:14px;color:var(--mute)}
+.db input,.db select{width:100%;padding:10px 12px;border-radius:10px;background:var(--panel2);border:1px solid var(--line)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.note{font-size:12px;color:var(--mute)}
+.plans{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.plan{border:1px solid var(--line);border-radius:14px;padding:14px}
+.plan.pro{border-color:var(--sun)}
+.plan h3{margin:0 0 4px}
+.plan .price{font-size:26px;font-weight:800;color:var(--sun)}
+.plan ul{padding-inline-start:18px;margin:8px 0;font-size:14px}
+.pl{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--panel2);border-radius:10px;margin-top:6px}
+.lock{opacity:.6}
+@media (max-width:820px){
+ .app{grid-template-columns:1fr;grid-template-rows:auto 38vh 1fr}
+ main{grid-row:2}
+ aside{grid-row:3;border:0}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <a id="ad" target="_blank" rel="noopener"></a>
+
+  <aside>
+    <div class="brand">
+      <div class="logo">Sonne <b>Player</b><span id="planBadge" class="badge">مجاني</span></div>
+      <div style="display:flex;gap:4px">
+        <button class="iconbtn" title="القوائم" onclick="openDlg('dPlaylists')">☰</button>
+        <button class="iconbtn" title="الإعدادات" onclick="openDlg('dSettings')">⚙</button>
+      </div>
+    </div>
+    <input id="q" class="search" placeholder="ابحث عن قناة…" oninput="renderList()">
+    <div id="tabs" class="tabs"></div>
+    <div id="list"></div>
+    <div class="foot">
+      <span>الريموت: ↑↓ تنقّل · OK تشغيل · أرقام للقفز · F شاشة كاملة</span>
+      <a onclick="openDlg('dImpressum')">Impressum</a>
+      <a onclick="openDlg('dPrivacy')">الخصوصية</a>
+      <a onclick="openDlg('dTerms')">الشروط</a>
+      <a onclick="openDlg('dPro')">Pro</a>
+    </div>
+  </aside>
+
+  <main>
+    <video id="v" controls playsinline></video>
+    <div id="home">
+      <h1>Sonne <b>Player</b></h1>
+      <p id="lastTxt">أضف قائمة قنواتك (M3U) وابدأ المشاهدة</p>
+      <div class="row" style="justify-content:center">
+        <button id="resumeBtn" class="btn" style="display:none" onclick="resume()">▶ كمّل المشاهدة</button>
+        <button class="btn ghost" onclick="openDlg('dPlaylists')">+ إضافة قائمة</button>
+      </div>
+    </div>
+    <div class="bar">
+      <div class="now"><b id="nowName">—</b><small id="nowEpg"></small></div>
+      <button class="iconbtn" title="مفضلة" onclick="toggleFav()">★</button>
+      <button class="iconbtn" title="مؤقت النوم" onclick="sleepTimer()">⏾</button>
+      <button class="iconbtn" title="شاشة كاملة" onclick="fullscreen()">⛶</button>
+    </div>
+  </main>
+</div>
+<div id="toast"></div>
+
+<!-- القوائم -->
+<dialog id="dPlaylists"><div class="dh"><h2>قوائم القنوات</h2><button class="iconbtn" onclick="closeDlg(this)">✕</button></div>
+<div class="db">
+  <div id="plList"></div>
+  <label>اسم القائمة</label><input id="plName" placeholder="مثلاً: قنواتي">
+  <label>رابط M3U</label><input id="plUrl" dir="ltr" placeholder="https://…/playlist.m3u">
+  <div class="row"><button class="btn" onclick="addFromUrl()">إضافة من رابط</button>
+  <label class="btn ghost" style="margin:0;color:var(--text)">رفع ملف M3U<input type="file" accept=".m3u,.m3u8,.txt" hidden onchange="addFromFile(this)"></label></div>
+  <p class="note">Sonne Player مشغّل فقط ولا يحتوي ولا يبيع أي قنوات. استخدم فقط قوائم وقنوات يحق لك مشاهدتها.</p>
+</div></dialog>
+
+<!-- الإعدادات -->
+<dialog id="dSettings"><div class="dh"><h2>الإعدادات</h2><button class="iconbtn" onclick="closeDlg(this)">✕</button></div>
+<div class="db">
+  <label>دليل البرامج EPG (رابط XMLTV) <span class="badge pro">Pro</span></label>
+  <input id="epgUrl" dir="ltr" placeholder="https://…/guide.xml">
+  <div class="row"><button class="btn ghost" onclick="loadEpg(true)">تحميل الدليل</button></div>
+  <label>قفل الأطفال — رمز PIN من 4 أرقام <span class="badge pro">Pro</span></label>
+  <input id="pin" inputmode="numeric" maxlength="4" placeholder="••••">
+  <label>المجموعات المقفلة (افصل بفاصلة)</label>
+  <input id="lockedGroups" placeholder="مثلاً: أفلام, Adult">
+  <div class="row"><button class="btn" onclick="saveSettings()">حفظ</button></div>
+  <label>المزامنة بين الأجهزة <span class="badge pro">Pro</span></label>
+  <div class="row"><button class="btn ghost" onclick="exportData()">تصدير إعداداتي</button>
+  <label class="btn ghost" style="margin:0;color:var(--text)">استيراد<input type="file" accept=".json" hidden onchange="importData(this)"></label></div>
+  <p class="note">كل بياناتك محفوظة على هذا الجهاز فقط.</p>
+</div></dialog>
+
+<!-- Pro -->
+<dialog id="dPro"><div class="dh"><h2>اشترك في Sonne Player Pro</h2><button class="iconbtn" onclick="closeDlg(this)">✕</button></div>
+<div class="db">
+  <div class="plans">
+    <div class="plan"><h3>مجاني</h3><div class="price">0 €</div>
+      <ul><li>قائمة واحدة</li><li>حتى 10 قنوات مفضلة</li><li>مع إعلانات</li></ul></div>
+    <div class="plan pro"><h3>Pro</h3><div class="price"><span id="priceTxt"></span><small style="font-size:13px"> / شهرياً</small></div>
+      <ul><li>قوائم وقنوات بلا حدود</li><li>دليل البرامج EPG</li><li>قفل الأطفال + مؤقت النوم</li><li>مزامنة بين الأجهزة</li><li>بدون إعلانات</li></ul></div>
+  </div>
+  <div class="row"><a id="buyLink" class="btn" target="_blank" rel="noopener" style="text-decoration:none">اشترك الآن</a></div>
+  <label>لديك مفتاح تفعيل؟</label>
+  <input id="keyIn" dir="ltr" placeholder="SP-XXXX-XXXX-XXXX">
+  <div class="row"><button class="btn ghost" onclick="activate()">تفعيل</button></div>
+  <p id="keyState" class="note"></p>
+</div></dialog>
+
+<!-- الصفحات القانونية -->
+<dialog id="dImpressum"><div class="dh"><h2>Impressum</h2><button class="iconbtn" onclick="closeDlg(this)">✕</button></div>
+<div class="db" dir="ltr" style="text-align:left">
+<p><b>Angaben gemäß § 5 DDG</b><br>Rabie Al Mehtar<br>Sonne Markt (Einzelunternehmen)<br>Gernotstraße 32<br>10365 Berlin<br>Deutschland</p>
+<p><b>Kontakt</b><br>Telefon: 0176 31467103<br>E-Mail: rabihalmehtar33@gmail.com</p>
+<p><b>Umsatzsteuer-ID</b><br><!-- TODO: USt-IdNr. eintragen oder Zeile löschen (Kleinunternehmer) -->[USt-IdNr. eintragen]</p>
+<p><b>Verantwortlich für den Inhalt</b><br>Rabie Al Mehtar, Anschrift wie oben</p>
+<p class="note">Sonne Player ist eine reine Abspiel-Software. Es werden keine Fernsehinhalte bereitgestellt.</p>
+</div></dialog>
+
+<dialog id="dPrivacy"><div class="dh"><h2>Datenschutz / الخصوصية</h2><button class="iconbtn" onclick="closeDlg(this)">✕</button></div>
+<div class="db" dir="ltr" style="text-align:left">
+<p><b>Verantwortlicher:</b> Rabie Al Mehtar, Gernotstraße 32, 10365 Berlin, rabihalmehtar33@gmail.com</p>
+<p><b>Lokale Speicherung:</b> Playlists, Favoriten und Einstellungen werden ausschließlich im Speicher Ihres Browsers/Geräts gespeichert (localStorage) und nicht an uns übertragen.</p>
+<p><b>Keine Analyse-Tools:</b> Wir verwenden kein Tracking und keine Werbe-Cookies.</p>
+<p><b>Externe Quellen:</b> Beim Abspielen verbindet sich Ihr Gerät direkt mit den von Ihnen eingetragenen Stream-Servern; diese erhalten dabei Ihre IP-Adresse. Die Abspiel-Bibliothek hls.js wird über jsDelivr geladen.</p>
+<p><b>Zahlung:</b> Die Zahlung erfolgt über einen externen Zahlungsanbieter; es gelten dessen Datenschutzhinweise.</p>
+<p><b>Ihre Rechte:</b> Auskunft, Berichtigung, Löschung, Einschränkung, Widerspruch und Beschwerde bei einer Aufsichtsbehörde (Art. 15–21, 77 DSGVO).</p>
+</div></dialog>
+
+<dialog id="dTerms"><div class="dh"><h2>AGB / الشروط</h2><button class="iconbtn" onclick="closeDlg(this)">✕</button></div>
+<div class="db" dir="ltr" style="text-align:left">
+<p><b>1. Leistung:</b> Sonne Player ist eine Software zum Abspielen von Playlists (M3U/HLS), die der Nutzer selbst hinzufügt. Der Anbieter stellt keine Sender, Streams oder Inhalte bereit.</p>
+<p><b>2. Verantwortung des Nutzers:</b> Der Nutzer darf nur Inhalte abspielen, zu deren Nutzung er berechtigt ist. Die Nutzung unerlaubter Quellen ist untersagt.</p>
+<p><b>3. Pro-Abo:</b> Monatliches Abonnement, jederzeit zum Ende des Abrechnungsmonats kündbar.</p>
+<p><b>4. Widerrufsrecht:</b> Verbraucher haben ein 14-tägiges Widerrufsrecht. <!-- TODO: vollständige Widerrufsbelehrung + Muster-Widerrufsformular einfügen --></p>
+<p><b>5. Haftung:</b> Keine Gewähr für die Verfügbarkeit von Streams Dritter.</p>
+</div></dialog>
+
+<dialog id="dAsk"><div class="dh"><h2 id="askT"></h2><button class="iconbtn" onclick="closeDlg(this)">✕</button></div>
+<div class="db"><input id="askIn" inputmode="numeric"><div class="row"><button class="btn" id="askOk">موافق</button></div></div></dialog>
+
+<script>
+/* ===== إعدادات البائع — عدّل هنا ===== */
+const CONFIG = {
+  price: "2,99 €",
+  buyUrl: "https://polar.sh/",            // ضع رابط صفحة الدفع الخاصة بك
+  keySecret: "CHANGE-ME-SONNE-2026",       // غيّره، ويجب أن يطابق ملف keygen.html
+  ads: [                                   // إعلاناتك أنت فقط
+    {text:"Sonne Markt — جملة المنتجات العربية لمحلات ألمانيا", sub:"sonnemarket.shop", url:"https://sonnemarket.shop"},
+    {text:"اشترك في Sonne Player Pro وأزل الإعلانات", sub:"اضغط هنا", url:"#pro"}
+  ],
+  // قنواتك الخاصة المضمّنة (لا تضع قنوات لا تملك حقها)
+  builtIn: [
+    {name:"قناة Sonne", group:"Sonne", logo:"", url:"https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8"}
+  ],
+  freeMaxPlaylists: 1,
+  freeMaxFavs: 10
+};
+
+/* ===== التخزين ===== */
+const KEY = "sonneplayer.v1";
+let S = {playlists:[], favs:[], last:null, epgUrl:"", pin:"", lockedGroups:[], license:""};
+try{ Object.assign(S, JSON.parse(localStorage.getItem(KEY)||"{}")); }catch(e){}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+let channels=[], filtered=[], current=null, tab="all", hls=null, epg={}, unlocked=new Set(), sleepT=null;
+const $=id=>document.getElementById(id);
+const v=$("v");
+
+/* ===== الترخيص ===== */
+function fnv(s){let h=0x811c9dc5;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,0x01000193)>>>0}return h.toString(36).toUpperCase().padStart(4,"0").slice(-4)}
+function checkKey(k){
+  const m=/^SP-([A-Z0-9]{4})-(\d{4})-([A-Z0-9]{4})$/.exec((k||"").trim().toUpperCase());
+  if(!m) return {ok:false,msg:"صيغة المفتاح غير صحيحة"};
+  if(fnv(m[1]+m[2]+CONFIG.keySecret)!==m[3]) return {ok:false,msg:"المفتاح غير صالح"};
+  const yy=+m[2].slice(0,2), mm=+m[2].slice(2), now=new Date();
+  const end=new Date(2000+yy, mm, 1); // بداية الشهر التالي
+  if(now>=end) return {ok:false,msg:"انتهى الاشتراك"};
+  return {ok:true,msg:"Pro مفعّل حتى نهاية "+String(mm).padStart(2,"0")+"/20"+String(yy).padStart(2,"0")};
+}
+const isPro=()=>checkKey(S.license).ok;
+function activate(){
+  const k=$("keyIn").value.trim().toUpperCase(), r=checkKey(k);
+  $("keyState").textContent=r.msg;
+  if(r.ok){S.license=k;save();refreshPlan();toast("تم تفعيل Pro ✓")}
+}
+function needPro(){ if(isPro()) return false; toast("هذه الميزة متاحة في Pro"); openDlg("dPro"); return true; }
+
+/* ===== M3U ===== */
+function parseM3U(txt){
+  const out=[]; let cur=null;
+  for(const raw of txt.split(/\r?\n/)){
+    const l=raw.trim(); if(!l) continue;
+    if(l.startsWith("#EXTINF")){
+      const a=k=>{const m=new RegExp(k+'="([^"]*)"').exec(l);return m?m[1]:""};
+      cur={name:(l.split(",").slice(1).join(",")||"قناة").trim(),logo:a("tvg-logo"),group:a("group-title")||"عام",tid:a("tvg-id")};
+    }else if(!l.startsWith("#")){
+      out.push(Object.assign(cur||{name:l,group:"عام",logo:"",tid:""},{url:l})); cur=null;
+    }
+  }
+  return out;
+}
+function addPlaylist(name,list,url){
+  if(!list.length) return toast("لم يتم العثور على قنوات في القائمة");
+  if(!isPro() && S.playlists.length>=CONFIG.freeMaxPlaylists){ toast("النسخة المجانية: قائمة واحدة فقط"); return openDlg("dPro"); }
+  S.playlists.push({id:Date.now(),name:name||"قائمتي",url:url||"",channels:list});
+  save(); build(); renderPlaylists(); toast("أُضيفت "+list.length+" قناة");
+}
+async function addFromUrl(){
+  const url=$("plUrl").value.trim(); if(!url) return;
+  try{ const r=await fetch(url); addPlaylist($("plName").value.trim(),parseM3U(await r.text()),url); }
+  catch(e){ toast("تعذّر تحميل الرابط — جرّب رفع الملف بدلاً منه"); }
+}
+function addFromFile(inp){
+  const f=inp.files[0]; if(!f) return;
+  f.text().then(t=>addPlaylist($("plName").value.trim()||f.name.replace(/\.\w+$/,""),parseM3U(t)));
+  inp.value="";
+}
+function removePlaylist(id){ S.playlists=S.playlists.filter(p=>p.id!==id); save(); build(); renderPlaylists(); }
+function renderPlaylists(){
+  $("plList").innerHTML=S.playlists.length?S.playlists.map(p=>`<div class="pl"><span>${esc(p.name)} <small class="note">(${p.channels.length})</small></span><button class="iconbtn" onclick="removePlaylist(${p.id})">🗑</button></div>`).join(""):'<p class="note">لا توجد قوائم بعد.</p>';
+}
+
+/* ===== القائمة ===== */
+function build(){
+  channels=[...CONFIG.builtIn.map(c=>({...c,tid:""})), ...S.playlists.flatMap(p=>p.channels)];
+  channels.forEach((c,i)=>{c.n=i+1; c.key=c.name+"|"+c.url});
+  const groups=[...new Set(channels.map(c=>c.group))];
+  $("tabs").innerHTML=[["all","الكل"],["fav","★ المفضلة"],...groups.map(g=>[g,g])]
+    .map(([k,t])=>`<button class="tab ${tab===k?"on":""}" onclick="setTab('${esc(k).replace(/'/g,"\\'")}')">${esc(t)}</button>`).join("");
+  renderList();
+}
+function setTab(t){tab=t;build()}
+function renderList(){
+  const q=$("q").value.trim().toLowerCase();
+  filtered=channels.filter(c=>(tab==="all"||(tab==="fav"?S.favs.includes(c.key):c.group===tab))&&(!q||c.name.toLowerCase().includes(q)));
+  if(!filtered.length){ $("list").innerHTML='<div class="empty">لا توجد قنوات هنا.<br>أضف قائمة M3U من زر ☰</div>'; return; }
+  const colors=["#b4533f","#2f6fd6","#c23a3a","#1aa0d8","#8e3b5c","#3a8f5c","#7a5bd6"];
+  $("list").innerHTML=filtered.slice(0,2000).map(c=>{
+    const locked=isLocked(c);
+    const lg=c.logo?`<img src="${esc(c.logo)}" alt="" loading="lazy" onerror="this.remove()">`:esc(c.name.slice(0,2));
+    return `<button class="ch ${current&&current.key===c.key?"on":""} ${locked?"lock":""}" onclick="playN(${c.n})">
+      <span class="num">${c.n}</span><span class="lg" style="background:${colors[c.n%colors.length]}">${lg}</span>
+      <span class="nm"><div>${locked?"🔒 ":""}${esc(c.name)}</div><small>${esc(c.group)}</small></span>
+      ${S.favs.includes(c.key)?'<span class="fav">★</span>':""}</button>`}).join("");
+}
+function isLocked(c){ return S.pin && S.lockedGroups.includes(c.group) && !unlocked.has(c.group); }
+
+/* ===== التشغيل ===== */
+function playN(n){ const c=channels[n-1]; if(c) play(c); }
+function play(c){
+  if(isLocked(c)){
+    return ask("أدخل رمز PIN لقفل الأطفال","",p=>{ if(p!==S.pin) return toast("رمز خاطئ"); unlocked.add(c.group); play(c); });
+  }
+  current=c; S.last=c.key; save();
+  $("home").style.display="none";
+  $("nowName").textContent=c.n+" · "+c.name; showEpg();
+  if(hls){hls.destroy();hls=null}
+  const isHls=/\.m3u8(\?|$)/i.test(c.url);
+  if(isHls && window.Hls && Hls.isSupported()){
+    hls=new Hls(); hls.loadSource(c.url); hls.attachMedia(v);
+    hls.on(Hls.Events.ERROR,(e,d)=>{ if(d.fatal) toast("تعذّر تشغيل القناة — قد يكون البث متوقفاً أو محمياً"); });
+  }else{ v.src=c.url; }
+  v.play().catch(()=>{});
+  renderList();
+}
+v.addEventListener("error",()=>{ if(!hls) toast("تعذّر تشغيل القناة"); });
+function resume(){ const c=channels.find(x=>x.key===S.last); if(c) play(c); }
+function step(d){ if(!filtered.length) return; let i=current?filtered.findIndex(c=>c.key===current.key):-1; i=(i+d+filtered.length)%filtered.length; play(filtered[i]); }
+
+function toggleFav(){
+  if(!current) return;
+  const i=S.favs.indexOf(current.key);
+  if(i>=0) S.favs.splice(i,1);
+  else{ if(!isPro()&&S.favs.length>=CONFIG.freeMaxFavs){toast("النسخة المجانية: 10 مفضلات");return openDlg("dPro");} S.favs.push(current.key); }
+  save(); renderList(); toast(i>=0?"أُزيلت من المفضلة":"أُضيفت إلى المفضلة");
+}
+function fullscreen(){ const el=document.querySelector("main"); document.fullscreenElement?document.exitFullscreen():el.requestFullscreen?.(); }
+function sleepTimer(){
+  if(needPro()) return;
+  ask("مؤقت النوم بالدقائق (0 للإلغاء)","30",m=>{
+  clearTimeout(sleepT); const n=+m;
+  if(n>0){ sleepT=setTimeout(()=>{v.pause();toast("انتهى مؤقت النوم")},n*60000); toast("سيتوقف التشغيل بعد "+n+" دقيقة"); }
+  else toast("أُلغي المؤقت");
+  });
+}
+function ask(title,def,cb){
+  $("askT").textContent=title; const i=$("askIn"); i.value=def;
+  $("askOk").onclick=()=>{ $("dAsk").close(); cb(i.value.trim()); };
+  i.onkeydown=e=>{ if(e.key==="Enter") $("askOk").click(); };
+  $("dAsk").showModal(); i.focus();
+}
+
+/* ===== EPG ===== */
+async function loadEpg(manual){
+  const url=$("epgUrl").value.trim()||S.epgUrl; if(!url) return;
+  if(!isPro()){ if(manual) needPro(); return; }
+  S.epgUrl=url; save();
+  try{
+    const xml=new DOMParser().parseFromString(await (await fetch(url)).text(),"text/xml");
+    const t=s=>{const m=/^(\d{4})(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)\s*([+-]\d{4})?/.exec(s);if(!m)return 0;return Date.parse(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}${m[7]?m[7].slice(0,3)+":"+m[7].slice(3):"Z"}`)};
+    epg={}; const now=Date.now();
+    xml.querySelectorAll("programme").forEach(p=>{
+      const st=t(p.getAttribute("start")), en=t(p.getAttribute("stop")); if(en<now) return;
+      (epg[p.getAttribute("channel")] ||= []).push({st,en,title:p.querySelector("title")?.textContent||""});
+    });
+    Object.values(epg).forEach(a=>a.sort((x,y)=>x.st-y.st));
+    if(manual) toast("تم تحميل دليل البرامج"); showEpg();
+  }catch(e){ if(manual) toast("تعذّر تحميل دليل البرامج"); }
+}
+function showEpg(){
+  const a=current&&current.tid&&epg[current.tid]; if(!a){ $("nowEpg").textContent=current?current.group:""; return; }
+  const now=Date.now(), i=a.findIndex(p=>p.st<=now&&p.en>now), f=d=>new Date(d).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"});
+  const cur=a[i], nx=a[i+1];
+  $("nowEpg").textContent=(cur?"الآن: "+cur.title+" ("+f(cur.st)+")":"")+(nx?" · التالي: "+nx.title+" ("+f(nx.st)+")":"");
+}
+
+/* ===== الإعدادات والمزامنة ===== */
+function saveSettings(){
+  const pin=$("pin").value.trim();
+  if(pin && !isPro()) return needPro();
+  if(pin && !/^\d{4}$/.test(pin)) return toast("رمز PIN يجب أن يكون 4 أرقام");
+  S.pin=pin; S.lockedGroups=$("lockedGroups").value.split(",").map(s=>s.trim()).filter(Boolean);
+  save(); unlocked.clear(); renderList(); toast("تم الحفظ");
+}
+function exportData(){
+  if(needPro()) return;
+  const b=new Blob([JSON.stringify({...S,license:""})],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="sonne-player-backup.json"; a.click();
+}
+function importData(inp){
+  if(needPro()) return;
+  const f=inp.files[0]; if(!f) return;
+  f.text().then(t=>{ try{ const d=JSON.parse(t); const lic=S.license; S={...S,...d,license:lic}; save(); init(); toast("تم الاستيراد"); }catch(e){ toast("ملف غير صالح"); } });
+  inp.value="";
+}
+
+/* ===== الإعلان والخطة ===== */
+let adI=0;
+function rotateAd(){
+  const el=$("ad");
+  if(isPro()||!CONFIG.ads.length){ el.classList.add("hide"); return; }
+  const a=CONFIG.ads[adI++%CONFIG.ads.length];
+  el.classList.remove("hide"); el.innerHTML=`${esc(a.text)} <small>${esc(a.sub||"")}</small>`;
+  el.href=a.url==="#pro"?"javascript:openDlg('dPro')":a.url;
+  el.target=a.url==="#pro"?"_self":"_blank";
+}
+function refreshPlan(){
+  const b=$("planBadge"), r=checkKey(S.license);
+  b.textContent=r.ok?"Pro":"مجاني"; b.className="badge"+(r.ok?" pro":"");
+  $("keyState").textContent=S.license?r.msg:""; rotateAd();
+}
+
+/* ===== أدوات ===== */
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function toast(t){const e=$("toast");e.textContent=t;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),2600)}
+function openDlg(id){ if(id==="dPlaylists") renderPlaylists(); $(id).showModal(); }
+function closeDlg(b){ b.closest("dialog").close(); }
+
+/* ===== الريموت ولوحة المفاتيح ===== */
+let numBuf="", numT=null;
+document.addEventListener("keydown",e=>{
+  if(document.querySelector("dialog[open]")||/INPUT|SELECT/.test(e.target.tagName)) return;
+  if(e.key==="ArrowDown"||e.key==="ChannelDown"){e.preventDefault();step(1)}
+  else if(e.key==="ArrowUp"||e.key==="ChannelUp"){e.preventDefault();step(-1)}
+  else if(e.key==="f"||e.key==="F") fullscreen();
+  else if(/^\d$/.test(e.key)){
+    numBuf+=e.key; toast("قناة "+numBuf); clearTimeout(numT);
+    numT=setTimeout(()=>{const c=channels.find(x=>x.n===+numBuf); numBuf=""; if(c) play(c);},1200);
+  }
+});
+
+/* ===== البدء ===== */
+function init(){
+  $("priceTxt").textContent=CONFIG.price; $("buyLink").href=CONFIG.buyUrl;
+  $("epgUrl").value=S.epgUrl||""; $("pin").value=S.pin||""; $("lockedGroups").value=(S.lockedGroups||[]).join(", ");
+  build(); refreshPlan();
+  const last=channels.find(c=>c.key===S.last);
+  if(last){ $("lastTxt").textContent="آخر قناة: "+last.name; $("resumeBtn").style.display=""; }
+  if(S.epgUrl) loadEpg(false);
+}
+init(); setInterval(rotateAd,12000);
+if("serviceWorker" in navigator && location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{}); setInterval(showEpg,60000);
+</script>
+</body>
+</html>
